@@ -1,119 +1,115 @@
-var entradaTexto = document.querySelector(".entrada-texto");
-var salidaTexto = document.querySelector(".salida-texto");
-var seccionTexto1 = document.querySelector(".texto1");
-var seccionTexto2 = document.querySelector(".texto2");
-var btnCopiar = document.querySelector(".copiar");
+class TextProcessor {
+    constructor() {
+        this.encryptionMap = {
+            'a': 'ai', 'e': 'enter', 'i': 'imes', 'o': 'ober', 'u': 'ufat'
+        };
+        this.decryptionMap = Object.fromEntries(
+            Object.entries(this.encryptionMap).map(([key, value]) => [value, key])
+        );
+    }
 
-function validar(textoValidar){
-    const letras = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z","Á","É","Í","Ó","Ú","á","é","í","ó","ú"];
-    var conteo = 0;
+    validateInput(text) {
+        return /^[a-z\s]*$/.test(text);
+    }
 
-    for(var posicion = 0; posicion < textoValidar.length; posicion++){
-        for(var letra = 0; letra < letras.length;letra++){
-            if(textoValidar.charAt(posicion) == letras[letra]){
-                conteo++;
+    encrypt(text) {
+        if (!this.validateInput(text)) {
+            throw new Error("Texto inválido. Use solo letras minúsculas sin acentos.");
+        }
+        return text.replace(/[aeiou]/g, match => this.encryptionMap[match]);
+    }
+
+    decrypt(text) {
+        if (!this.validateInput(text)) {
+            throw new Error("Texto inválido. Use solo letras minúsculas sin acentos.");
+        }
+        const pattern = new RegExp(Object.keys(this.decryptionMap).join('|'), 'g');
+        return text.replace(pattern, match => this.decryptionMap[match]);
+    }
+}
+
+class UIHandler {
+    constructor() {
+        this.processor = new TextProcessor();
+        this.inputElement = document.querySelector(".entrada-texto");
+        this.outputElement = document.querySelector(".salida-texto");
+        this.text1Element = document.querySelector(".texto1");
+        this.text2Element = document.querySelector(".texto2");
+        this.copyButton = document.querySelector(".copiar");
+        this.encryptButton = document.querySelector(".encriptar");
+        this.decryptButton = document.querySelector(".desencriptar");
+        
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        this.encryptButton.addEventListener("click", () => this.handleEncryptDecrypt('encrypt'));
+        this.decryptButton.addEventListener("click", () => this.handleEncryptDecrypt('decrypt'));
+        this.copyButton.addEventListener("click", () => this.copyText());
+    }
+
+    handleEncryptDecrypt(action) {
+        try {
+            const inputText = this.inputElement.value.trim();
+            if (!inputText) {
+                throw new Error("Por favor, ingrese un texto para procesar.");
             }
+            const result = action === 'encrypt' 
+                ? this.processor.encrypt(inputText)
+                : this.processor.decrypt(inputText);
+            this.updateOutput(result);
+        } catch (error) {
+            this.showError(error.message);
         }
     }
-    if(conteo == 0){
-        return true;
+
+    updateOutput(text) {
+        this.outputElement.value = text;
+        this.outputElement.style.background = "white";
+        this.text1Element.style.display = "none";
+        this.text2Element.style.display = "none";
+        this.copyButton.style.display = "block";
     }
-    return false;
+
+    copyText() {
+        const textToCopy = this.outputElement.value;
+        if (textToCopy) {
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => this.showNotification("Texto copiado al portapapeles"))
+                .catch(err => this.showError("Error al copiar: " + err));
+        } else {
+            this.showError("No hay texto para copiar");
+        }
+    }
+
+    showError(message) {
+        alert(message);
+    }
+
+    showNotification(message) {
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.style.opacity = '1', 10);
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
 }
 
-function encriptar() {
-    var texto = entradaTexto.value;
-    var salida = "";
-    if(!validar(texto)){
-        alert("Texto invalido, verifique su texto.")
-        return;
-    }
-    for(var posicion = 0; posicion < texto.length; posicion++){
-        if(texto.charAt(posicion) == "a"){
-            salida = salida + "ai";
-        }
-        else if(texto.charAt(posicion) == "e"){
-            salida = salida + "enter";
-        }
-        else if(texto.charAt(posicion) == "i"){
-            salida = salida + "imes";
-        }
-        else if(texto.charAt(posicion) == "o"){
-            salida = salida + "ober";
-        }
-        else if(texto.charAt(posicion) == "u"){
-            salida = salida + "ufat";
-        }
-        else {
-            salida = salida + texto.charAt(posicion);
-        }
-    }
-    entradaTexto.value = "";
-    salidaTexto.value = salida;
-    ocultar();
-}
-
-function desencriptar() {
-    var texto = entradaTexto.value;
-    var salida = "";
-    if(!validar(texto)){
-        alert("Texto invalido, verifique su texto.")
-        return;
-    }
-    for(var posicion = 0; posicion < texto.length; posicion++){
-        if(texto.charAt(posicion) == "a" && texto.charAt(posicion + 1) == "i"){
-            salida = salida + "a";
-            posicion = posicion + 1;
-        }
-        else if(texto.charAt(posicion) == "e" && texto.charAt(posicion + 1) == "n" && texto.charAt(posicion + 2) == "t" && texto.charAt(posicion + 3) == "e" && texto.charAt(posicion + 4) == "r"){
-            salida = salida + "e";
-            posicion = posicion + 4;
-        }
-        else if(texto.charAt(posicion) == "i" && texto.charAt(posicion + 1) == "m" && texto.charAt(posicion + 2) == "e" && texto.charAt(posicion + 3) == "s"){
-            salida = salida + "i";
-            posicion = posicion + 3;
-        }
-        else if(texto.charAt(posicion) == "o" && texto.charAt(posicion + 1) == "b" && texto.charAt(posicion + 2) == "e" && texto.charAt(posicion + 3) == "r"){
-            salida = salida + "o";
-            posicion = posicion + 3;
-        }
-        else if(texto.charAt(posicion) == "u" && texto.charAt(posicion + 1) == "f" && texto.charAt(posicion + 2) == "a" && texto.charAt(posicion + 3) == "t"){
-            salida = salida + "u";
-            posicion = posicion + 3;
-        }
-        else {
-            salida = salida + texto.charAt(posicion);
-        }
-    }
-    entradaTexto.value = "";
-    salidaTexto.value = salida;
-    ocultar();
-}
-
-function ocultar(){
-    salidaTexto.style.background = "white";
-    seccionTexto1.style.display = "none";
-    seccionTexto2.style.display = "none";
-    btnCopiar.style.display = "";
-}
-
-function mostrar(){
-    salidaTexto.style.background = "#FFF no-repeat center url(imagenes/notexto.png)";
-    seccionTexto1.style.display = "";
-    seccionTexto2.style.display = "";
-    btnCopiar.style.display = "none";
-}
-
-function copiar(){
-    var copia =salidaTexto.value;
-    navigator.clipboard.writeText(copia);
-    
-    var anuncio = document.querySelector(".anuncio");
-    anuncio.textContent = "Texto copiado";
-    anuncio.style.display = "block";
-    setTimeout(() => {
-        anuncio.style.display = "none";
-        salidaTexto.value = "";
-        mostrar();
-    }, 950);
-}
+document.addEventListener('DOMContentLoaded', () => {
+    new UIHandler();
+});
