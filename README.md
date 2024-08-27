@@ -1,0 +1,2 @@
+# RetorEncriptadordetexto
+Encriptador de texto
